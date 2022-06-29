@@ -1,22 +1,19 @@
 package server;
 
 import client.ChatMember;
-import client.User;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 public class Server {
     public static void main(String[] args) {
         ArrayList<Socket> sockets = new ArrayList<>();
-        HashMap<Integer, String> clientData = new HashMap<>();
-        HashSet<ChatMember> members = new HashSet<>();
+        HashMap<Integer, ChatMember> clientData = new HashMap<>();
+        ArrayList<String> userNames = new ArrayList<>();
 
         try {
             ServerSocket serverSocket = new ServerSocket(9178);
@@ -41,23 +38,24 @@ public class Server {
                                 for (Socket socket1 : sockets) {
                                     DataOutputStream out = new DataOutputStream(socket1.getOutputStream());
                                     out.writeUTF("Server: " + request);
-                                    System.out.println(socket1.getPort());
-                                    //ChatMember user = new User("Joooa");
-                                    //System.out.println(user);
-                                    //clientData.putIfAbsent(socket1.getPort()) socket1.getPort()
-                                    /**/
+                                    //System.out.println(socket1.getPort());
                                     int clientPort = socket1.getPort();
-                                    //if (!clientData.containsKey(clientPort)) {
                                     if (!clientData.containsKey(clientPort)) {
                                         out.writeUTF("Как тебя зовут?");
                                         String name = in.readUTF();
-
-                                        clientData.put(clientPort, name);
-                                        out.writeUTF("Привет, " + name + ". Ваш порт = " + clientPort);
+                                        userNames.add(name);
+                                        System.out.println("Добавлен пользователь чата " + name +
+                                                ", port: " + clientPort);
+                                        clientData.put(clientPort, new ChatMember(name, clientPort));
+                                        out.writeUTF("Привет, " + name);
                                     }
-                                    //System.out.println(socket1.getPort());
-                                    //if(userNames. != null) out.writeUTF("Как тебя зовут?");
+                                    /*
+                                    for (ChatMember user: clientData.values()){
+                                        System.out.print(user.getNAME() + ", ");
+                                    }
+                                    */
                                 }
+
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -66,9 +64,9 @@ public class Server {
                 });
                 thread.start();
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 }
