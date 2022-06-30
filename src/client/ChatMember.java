@@ -1,21 +1,19 @@
 package client;
 
 public class ChatMember {
-    private final String NAME;
+    private String name;
     private int port;
 
     public ChatMember(String name, int port) {
-        NAME = name;
+        this.name = name;
         this.port = port;
     }
 
-    public String getNAME() {
-        return NAME;
+    public String getName() {
+        return name;
     }
 
     public int getPort() {
         return port;
     }
-
-
 }

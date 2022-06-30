@@ -13,7 +13,6 @@ public class Server {
     public static void main(String[] args) {
         ArrayList<Socket> sockets = new ArrayList<>();
         HashMap<Integer, ChatMember> clientData = new HashMap<>();
-        ArrayList<String> userNames = new ArrayList<>();
 
         try {
             ServerSocket serverSocket = new ServerSocket(9178);
@@ -38,12 +37,10 @@ public class Server {
                                 for (Socket socket1 : sockets) {
                                     DataOutputStream out = new DataOutputStream(socket1.getOutputStream());
                                     out.writeUTF("Server: " + request);
-                                    //System.out.println(socket1.getPort());
                                     int clientPort = socket1.getPort();
                                     if (!clientData.containsKey(clientPort)) {
                                         out.writeUTF("Как тебя зовут?");
                                         String name = in.readUTF();
-                                        userNames.add(name);
                                         System.out.println("Добавлен пользователь чата " + name +
                                                 ", port: " + clientPort);
                                         clientData.put(clientPort, new ChatMember(name, clientPort));
