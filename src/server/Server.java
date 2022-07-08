@@ -1,69 +1,102 @@
 package server;
 
-import client.ChatMember;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.UUID;
 
 public class Server {
-    public static void main(String[] args) {
-        ArrayList<Socket> sockets = new ArrayList<>();
-        HashMap<Integer, ChatMember> clientData = new HashMap<>();
+    static ArrayList<User> users = new ArrayList<>();
+    static String db_url = "jdbc:mysql://localhost/android_30";
+    static String db_login = "root";
+    static String db_pass = "musya22musya";
 
+    public static void main(String[] args) {
         try {
-            ServerSocket serverSocket = new ServerSocket(9178);
-            System.out.println("Сервер запущен!");
+            ServerSocket serverSocket = new ServerSocket(9174);
+            System.out.println("Server started!");
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
             while (true) {
-                // Create socket for connected client
+                // Создаём сокет для подключившегося клиента
                 Socket socket = serverSocket.accept();
-                sockets.add(socket);
-                System.out.println("Клиент подключился");
+                System.out.println("Client connected");
+                User user = new User(socket);
+                /**/
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            DataInputStream is = new DataInputStream(socket.getInputStream());
-                            DataInputStream in = new DataInputStream(socket.getInputStream());
-                            // output stream for socket
-                            // send request "What's your name?"
-                            // receive answer and retain it
-                            while (true) {
-                                String request = is.readUTF();
-                                System.out.println(request);
-                                for (Socket socket1 : sockets) {
-                                    DataOutputStream out = new DataOutputStream(socket1.getOutputStream());
-                                    out.writeUTF("Server: " + request);
-                                    int clientPort = socket1.getPort();
-                                    if (!clientData.containsKey(clientPort)) {
-                                        out.writeUTF("Как тебя зовут?");
-                                        String name = in.readUTF();
-                                        System.out.println("Добавлен пользователь чата " + name +
-                                                ", port: " + clientPort);
-                                        clientData.put(clientPort, new ChatMember(name, clientPort));
-                                        out.writeUTF("Привет, " + name);
-                                    }
-                                    /*
-                                    for (ChatMember user: clientData.values()){
-                                        System.out.print(user.getNAME() + ", ");
-                                    }
-                                    */
-                                }
-
+                            boolean isAuth = false;
+                            while (!isAuth) {
+                                String authData = user.getIs().readUTF();
+                                String phone = authData.split("//")[1];
+                                String pass = authData.split("//")[2];
+//                                user.getOut().writeUTF("Phone: ");
+//                                String phone = user.getIs().readUTF();
+//                                user.getOut().writeUTF("Password: ");
+//                                String pass = user.getIs().readUTF();
+                                Connection connection = DriverManager.getConnection(db_url, db_login, db_pass);
+                                Statement statement = connection.createStatement();
+                                ResultSet resultSet = statement.executeQuery("SELECT * FROM `users` " +
+                                        "WHERE `phone`='" + phone + "' AND `password`='" + pass + "'");
+                                System.out.println(resultSet.next());
+                                System.out.println(resultSet.getString("name"));
+                                if (resultSet.next()) isAuth = true;
+                                else user.getOut().writeUTF("error");
                             }
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                            user.getOut().writeUTF("success");
+                            users.add(user);
+                            //System.out.println(resultSet.getString("name"));
+                            user.getOut().writeUTF("Input name: ");
+                            user.setName(user.getIs().readUTF());
+                            while (true) {
+                                String request = user.getIs().readUTF();
+                                System.out.println(request);
+                                broadCastMessage(request, user.getUuid());
+                            }
+                        } catch (Exception e) {
+                            users.remove(user);
+                            broadCastMessage(user.getName() + " disconnected");
                         }
+
                     }
                 });
                 thread.start();
             }
-        } catch (IOException e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public static void broadCastMessage(String message, UUID uuid) {
+
+        for (User user : users) {
+            try {
+                if (!user.getUuid().toString().equals(uuid.toString())) {
+                    user.getOut().writeUTF(user.getName() + ": " + message);
+                } else {
+                    System.out.println(user.getName() + ": " + message);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static void broadCastMessage(String message) {
+        System.out.println(message);
+        for (User user : users) {
+            try {
+                user.getOut().writeUTF("Server: " + message);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
