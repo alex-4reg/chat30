@@ -14,7 +14,7 @@ public class Server {
     static ArrayList<User> users = new ArrayList<>();
     static String db_url = "jdbc:mysql://localhost/android_30";
     static String db_login = "root";
-    static String db_pass = "musya22musya";
+    static String db_pass = "QjhLi36tA";
 
     public static void main(String[] args) {
         try {
@@ -22,7 +22,7 @@ public class Server {
             System.out.println("Server started!");
             Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
             while (true) {
-                // Создаём сокет для подключившегося клиента
+                // Create socket for connected client
                 Socket socket = serverSocket.accept();
                 System.out.println("Client connected");
                 User user = new User(socket);
@@ -63,7 +63,6 @@ public class Server {
                             users.remove(user);
                             broadCastMessage(user.getName() + " disconnected");
                         }
-
                     }
                 });
                 thread.start();
